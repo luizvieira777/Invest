@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Investimentos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+  <div class="app-container">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="app-title">💰 InvestPro</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">📊</span>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item" data-page="calculator">
+          <span class="nav-icon">🧮</span>
+          Calculadora
+        </a>
+        <a href="#" class="nav-item" data-page="investments">
+          <span class="nav-icon">💼</span>
+          Meus Investimentos
+        </a>
+        <a href="#" class="nav-item" data-page="portfolio">
+          <span class="nav-icon">📈</span>
+          Carteira
+        </a>
+        <a href="#" class="nav-item" data-page="simulator">
+          <span class="nav-icon">🎯</span>
+          Simulador de Perfil
+        </a>
+        <a href="#" class="nav-item" data-page="comparator">
+          <span class="nav-icon">⚖️</span>
+          Comparador
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="logoutBtn">Sair</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <div class="indicators">
+          <div class="indicator">
+            <span class="indicator-label">CDI</span>
+            <span class="indicator-value" id="cdiValue">-</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">SELIC</span>
+            <span class="indicator-value" id="selicValue">-</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content" id="pageContent">
+        <div class="page" id="dashboard" style="display: block;">
+          <h2 class="page-title">Dashboard</h2>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Valor Total Investido</div>
+              <div class="stat-value" id="totalInvested">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Valor Atual</div>
+              <div class="stat-value" id="currentValue">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lucro/Prejuízo</div>
+              <div class="stat-value" id="profitLoss">R$ 0,00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Rentabilidade</div>
+              <div class="stat-value" id="totalYield">0%</div>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <h3>Evolução dos Investimentos</h3>
+            <canvas id="evolutionChart"></canvas>
+          </div>
+
+          <div class="recent-investments">
+            <h3>Investimentos Recentes</h3>
+            <div id="recentInvestmentsList"></div>
+          </div>
+        </div>
+
+        <div class="page" id="calculator" style="display: none;">
+          <h2 class="page-title">Calculadora de Investimentos</h2>
+
+          <div class="calculator-container">
+            <form class="calculator-form" id="calculatorForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="investmentName">Nome do Investimento</label>
+                  <input type="text" id="investmentName" placeholder="Ex: CDB Banco XYZ" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="investmentType">Tipo de Investimento</label>
+                  <select id="investmentType">
+                    <option value="CDB">CDB</option>
+                    <option value="LCI">LCI</option>
+                    <option value="LCA">LCA</option>
+                    <option value="Tesouro Selic">Tesouro Selic</option>
+                    <option value="Tesouro IPCA+">Tesouro IPCA+</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="initialValue">Valor Inicial (R$)</label>
+                  <input type="number" id="initialValue" placeholder="10000" step="0.01" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="cdiPercentage">Percentual do CDI (%)</label>
+                  <input type="number" id="cdiPercentage" placeholder="100" step="0.01" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="startDate">Data de Início</label>
+                  <input type="date" id="startDate" required />
+                </div>
+
+                <div class="form-group">
+                  <label for="endDate">Data Final</label>
+                  <input type="date" id="endDate" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="monthlyContribution">Aporte Mensal (R$)</label>
+                  <input type="number" id="monthlyContribution" placeholder="0" step="0.01" />
+                </div>
+
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="applyTax" checked />
+                    Aplicar Imposto de Renda
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Calcular</button>
+            </form>
+
+            <div class="calculation-result" id="calculationResult" style="display: none;">
+              <h3>Resultado da Simulação</h3>
+              <div class="result-grid">
+                <div class="result-item">
+                  <span class="result-label">Valor Bruto:</span>
+                  <span class="result-value" id="resultGrossValue">R$ 0,00</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Imposto (IR):</span>
+                  <span class="result-value" id="resultTax">R$ 0,00</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Valor Líquido:</span>
+                  <span class="result-value" id="resultNetValue">R$ 0,00</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Lucro:</span>
+                  <span class="result-value" id="resultProfit">R$ 0,00</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Rentabilidade:</span>
+                  <span class="result-value" id="resultYield">0%</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Dias:</span>
+                  <span class="result-value" id="resultDays">0</span>
+                </div>
+              </div>
+              <button class="btn btn-secondary" id="saveInvestmentBtn">Salvar Investimento</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="investments" style="display: none;">
+          <h2 class="page-title">Meus Investimentos</h2>
+
+          <div class="investments-toolbar">
+            <button class="btn btn-primary" id="exportCsvBtn">Exportar CSV</button>
+            <button class="btn btn-secondary" id="importCsvBtn">Importar CSV</button>
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" />
+          </div>
+
+          <div class="investments-table-container">
+            <table class="investments-table" id="investmentsTable">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Valor Inicial</th>
+                  <th>Valor Atual</th>
+                  <th>Rentabilidade</th>
+                  <th>Data Início</th>
+                  <th>Data Fim</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="investmentsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="page" id="portfolio" style="display: none;">
+          <h2 class="page-title">Gerador de Carteira</h2>
+
+          <div class="portfolio-form-container">
+            <form class="portfolio-form" id="portfolioForm">
+              <div class="form-group">
+                <label for="portfolioName">Nome da Carteira</label>
+                <input type="text" id="portfolioName" placeholder="Minha Carteira 2024" required />
+              </div>
+
+              <div class="form-group">
+                <label for="portfolioValue">Valor Total (R$)</label>
+                <input type="number" id="portfolioValue" placeholder="100000" step="0.01" required />
+              </div>
+
+              <div class="form-group">
+                <label for="profileType">Perfil de Investidor</label>
+                <select id="profileType">
+                  <option value="conservative">Conservador</option>
+                  <option value="moderate">Moderado</option>
+                  <option value="aggressive">Agressivo</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Gerar Carteira</button>
+            </form>
+
+            <div class="portfolio-result" id="portfolioResult" style="display: none;">
+              <h3>Distribuição da Carteira</h3>
+              <div class="allocation-chart-container">
+                <canvas id="allocationChart"></canvas>
+              </div>
+              <div class="allocation-table" id="allocationTable"></div>
+              <button class="btn btn-secondary" id="savePortfolioBtn">Salvar Carteira</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page" id="simulator" style="display: none;">
+          <h2 class="page-title">Simulador de Perfil de Investidor</h2>
+
+          <div class="profile-cards">
+            <div class="profile-card">
+              <h3>Conservador</h3>
+              <div class="profile-description">
+                <p>Prioriza segurança e previsibilidade</p>
+                <ul>
+                  <li>70-80% Renda Fixa</li>
+                  <li>10-20% Fundos Imobiliários</li>
+                  <li>0-10% Internacional</li>
+                </ul>
+              </div>
+              <button class="btn btn-outline" data-profile="conservative">Simular</button>
+            </div>
+
+            <div class="profile-card">
+              <h3>Moderado</h3>
+              <div class="profile-description">
+                <p>Equilíbrio entre risco e retorno</p>
+                <ul>
+                  <li>50-60% Renda Fixa</li>
+                  <li>30-40% Renda Variável</li>
+                  <li>10-15% Internacional</li>
+                </ul>
+              </div>
+              <button class="btn btn-outline" data-profile="moderate">Simular</button>
+            </div>
+
+            <div class="profile-card">
+              <h3>Agressivo</h3>
+              <div class="profile-description">
+                <p>Busca máximo retorno, aceita volatilidade</p>
+                <ul>
+                  <li>30-40% Renda Fixa</li>
+                  <li>50-60% Renda Variável</li>
+                  <li>10-20% Internacional</li>
+                </ul>
+              </div>
+              <button class="btn btn-outline" data-profile="aggressive">Simular</button>
+            </div>
+          </div>
+
+          <div class="simulator-result" id="simulatorResult" style="display: none;">
+            <h3>Resultado da Simulação</h3>
+            <div id="simulatorContent"></div>
+          </div>
+        </div>
+
+        <div class="page" id="comparator" style="display: none;">
+          <h2 class="page-title">Comparador de Investimentos</h2>
+
+          <div class="comparator-form">
+            <div class="comparison-inputs" id="comparisonInputs">
+              <div class="comparison-item">
+                <h4>Investimento 1</h4>
+                <input type="text" class="comparison-name" placeholder="Nome" />
+                <input type="number" class="comparison-value" placeholder="Valor inicial" step="0.01" />
+                <input type="number" class="comparison-cdi" placeholder="% CDI" step="0.01" />
+                <input type="number" class="comparison-days" placeholder="Dias" />
+              </div>
+              <div class="comparison-item">
+                <h4>Investimento 2</h4>
+                <input type="text" class="comparison-name" placeholder="Nome" />
+                <input type="number" class="comparison-value" placeholder="Valor inicial" step="0.01" />
+                <input type="number" class="comparison-cdi" placeholder="% CDI" step="0.01" />
+                <input type="number" class="comparison-days" placeholder="Dias" />
+              </div>
+            </div>
+            <button class="btn btn-primary" id="compareBtn">Comparar</button>
+          </div>
+
+          <div class="comparison-result" id="comparisonResult" style="display: none;">
+            <h3>Resultado da Comparação</h3>
+            <canvas id="comparisonChart"></canvas>
+            <div class="comparison-details" id="comparisonDetails"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <h2>Bem-vindo ao InvestPro</h2>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Login</button>
+        <button class="auth-tab" data-tab="signup">Cadastro</button>
+      </div>
+
+      <form class="auth-form" id="loginForm">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" required />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+      </form>
+
+      <form class="auth-form" id="signupForm" style="display: none;">
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" required />
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Senha</label>
+          <input type="password" id="signupPassword" required />
+        </div>
+        <div class="form-group">
+          <label for="signupPasswordConfirm">Confirmar Senha</label>
+          <input type="password" id="signupPasswordConfirm" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Cadastrar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+
+</html>
