@@ -30,9 +30,10 @@ export function showPage(pageName) {
   });
 }
 
-export function updateIndicators(cdi, selic) {
+export function updateIndicators(cdi, selic, ipca) {
   const cdiElement = document.getElementById('cdiValue');
   const selicElement = document.getElementById('selicValue');
+  const ipcaElement = document.getElementById('ipcaValue');
 
   if (cdiElement) {
     cdiElement.textContent = formatPercentage(cdi);
@@ -42,6 +43,11 @@ export function updateIndicators(cdi, selic) {
   if (selicElement) {
     selicElement.textContent = formatPercentage(selic);
     animateNumber(selicElement, 0, selic);
+  }
+
+  if (ipcaElement) {
+    ipcaElement.textContent = formatPercentage(ipca);
+    animateNumber(ipcaElement, 0, ipca);
   }
 }
 

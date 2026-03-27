@@ -1,14 +1,14 @@
 :root {
-  --primary-color: #2563eb;
-  --primary-dark: #1e40af;
-  --secondary-color: #10b981;
-  --accent-color: #f59e0b;
+  --primary-color: #1d4ed8;
+  --primary-dark: #1e3a8a;
+  --secondary-color: #2563eb;
+  --accent-color: #60a5fa;
   --danger-color: #ef4444;
-  --bg-color: #f8fafc;
+  --bg-color: #eff6ff;
   --surface-color: #ffffff;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-color: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #bfdbfe;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -58,10 +58,32 @@ body {
 }
 
 .app-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--primary-dark);
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-md);
+}
+
+.brand-text {
+  letter-spacing: 0.04em;
 }
 
 .sidebar-nav {
@@ -87,7 +109,7 @@ body {
 }
 
 .nav-item.active {
-  background-color: #eff6ff;
+  background-color: #dbeafe;
   color: var(--primary-color);
   border-right: 3px solid var(--primary-color);
 }
@@ -354,7 +376,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background-color: #059669;
+  background-color: var(--primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
