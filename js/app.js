@@ -38,6 +38,7 @@ import {
 let currentUser = null;
 let currentCDI = 11.65;
 let currentSelic = 11.75;
+let currentIpca = 4.5;
 let investments = [];
 let calculationResult = null;
 let evolutionChart = null;
@@ -80,7 +81,8 @@ async function loadAppData() {
     const indicators = await updateIndicators();
     currentCDI = indicators.cdi;
     currentSelic = indicators.selic;
-    updateIndicatorsUI(currentCDI, currentSelic);
+    currentIpca = indicators.ipca;
+    updateIndicatorsUI(currentCDI, currentSelic, currentIpca);
 
     investments = await getInvestments();
 

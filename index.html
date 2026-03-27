@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Investimentos</title>
+  <link rel="icon" type="image/svg+xml" href="/lz-favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +17,10 @@
   <div class="app-container">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="app-title">💰 InvestPro</h1>
+        <h1 class="app-title">
+          <span class="brand-logo" aria-hidden="true">LZ</span>
+          <span class="brand-text">LZ</span>
+        </h1>
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard">
@@ -60,6 +64,10 @@
           <div class="indicator">
             <span class="indicator-label">SELIC</span>
             <span class="indicator-value" id="selicValue">-</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">IPCA</span>
+            <span class="indicator-value" id="ipcaValue">-</span>
           </div>
         </div>
       </header>
