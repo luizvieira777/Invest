@@ -99,7 +99,7 @@ export function updateDashboardStats(stats) {
   if (profitLossEl) {
     const profit = stats.currentValue - stats.totalInvested;
     profitLossEl.textContent = formatCurrency(profit);
-    profitLossEl.style.color = profit >= 0 ? '#10b981' : '#ef4444';
+    profitLossEl.style.color = profit >= 0 ? '#1d4ed8' : '#ef4444';
   }
 
   if (totalYieldEl) {
@@ -107,7 +107,7 @@ export function updateDashboardStats(stats) {
       ? ((stats.currentValue - stats.totalInvested) / stats.totalInvested) * 100
       : 0;
     totalYieldEl.textContent = formatPercentage(yieldValue);
-    totalYieldEl.style.color = yieldValue >= 0 ? '#10b981' : '#ef4444';
+    totalYieldEl.style.color = yieldValue >= 0 ? '#1d4ed8' : '#ef4444';
   }
 }
 
@@ -137,7 +137,7 @@ export function renderInvestmentsTable(investments, onDelete) {
         <td>${inv.investment_type}</td>
         <td>${formatCurrency(inv.initial_value)}</td>
         <td>${formatCurrency(inv.current_value)}</td>
-        <td style="color: ${investmentYield >= 0 ? '#10b981' : '#ef4444'}">
+        <td style="color: ${investmentYield >= 0 ? '#1d4ed8' : '#ef4444'}">
           ${formatPercentage(investmentYield)}
         </td>
         <td>${formatDate(inv.start_date)}</td>
@@ -187,7 +187,7 @@ export function renderRecentInvestments(investments) {
             <div style="font-weight: 600; color: var(--text-primary);">
               ${formatCurrency(inv.current_value)}
             </div>
-            <div style="font-size: 0.875rem; color: ${profit >= 0 ? '#10b981' : '#ef4444'};">
+            <div style="font-size: 0.875rem; color: ${profit >= 0 ? '#1d4ed8' : '#ef4444'};">
               ${formatCurrency(profit)}
             </div>
           </div>
@@ -250,7 +250,7 @@ export function showNotification(message, type = 'info') {
     top: 2rem;
     right: 2rem;
     padding: 1rem 1.5rem;
-    background-color: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#2563eb'};
+    background-color: ${type === 'error' ? '#ef4444' : type === 'success' ? '#1d4ed8' : '#2563eb'};
     color: white;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);

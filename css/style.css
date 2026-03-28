@@ -40,8 +40,8 @@ body {
 
 .sidebar {
   width: 260px;
-  background: var(--surface-color);
-  border-right: 1px solid var(--border-color);
+  background: linear-gradient(180deg, #1e3a8a 0%, #1d4ed8 100%);
+  border-right: 1px solid rgba(147, 197, 253, 0.4);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -96,7 +96,7 @@ body {
   display: flex;
   align-items: center;
   padding: 0.875rem 1.5rem;
-  color: var(--text-secondary);
+  color: #dbeafe;
   text-decoration: none;
   transition: var(--transition);
   font-weight: 500;
@@ -121,23 +121,23 @@ body {
 
 .sidebar-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(147, 197, 253, 0.35);
 }
 
 .btn-logout {
   width: 100%;
   padding: 0.75rem;
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(191, 219, 254, 0.45);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: #eff6ff;
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
 }
 
 .btn-logout:hover {
-  background-color: var(--danger-color);
+  background-color: rgba(239, 68, 68, 0.9);
   color: white;
   border-color: var(--danger-color);
 }
@@ -269,6 +269,35 @@ body {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+  margin-bottom: 0;
+}
+
+.range-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.range-control select {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--surface-color);
   color: var(--text-primary);
 }
 
@@ -623,6 +652,10 @@ body {
   margin-bottom: 1.5rem;
 }
 
+.comparison-options {
+  margin-bottom: 1.5rem;
+}
+
 .comparison-item {
   padding: 1.5rem;
   background-color: var(--bg-color);
@@ -636,7 +669,8 @@ body {
   color: var(--text-primary);
 }
 
-.comparison-item input {
+.comparison-item input,
+.comparison-item select {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-color);
@@ -644,6 +678,10 @@ body {
   font-size: 1rem;
   margin-bottom: 0.75rem;
   font-family: inherit;
+}
+
+.comparison-checkbox {
+  padding-top: 0.25rem;
 }
 
 .comparison-result {

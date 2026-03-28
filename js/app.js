@@ -2,6 +2,7 @@ import { getCDI, getSelic, updateIndicators } from './api.js';
 import {
   calculateInvestment,
   calculateDays,
+  calculateIncomeTax,
   generateEvolutionData,
   calculatePortfolioAllocation,
   calculateDetailedAllocation,
@@ -126,7 +127,7 @@ function renderEvolutionChart() {
       cdiPercentage: parseFloat(inv.cdi_percentage),
       cdiRate: currentCDI,
       monthlyContribution: parseFloat(inv.monthly_contribution || 0)
-    }, 12);
+    }, currentEvolutionRange);
 
     return {
       label: inv.name,
@@ -140,7 +141,7 @@ function renderEvolutionChart() {
   evolutionChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Array.from({ length: 13 }, (_, i) => `Mês ${i}`),
+      labels: Array.from({ length: currentEvolutionRange + 1 }, (_, i) => `Mês ${i}`),
       datasets: allEvolutions
     },
     options: {
@@ -256,6 +257,18 @@ function setupEventListeners() {
     compareBtn.addEventListener('click', handleCompare);
   }
 
+  setupComparatorIndexInputs();
+
+  const evolutionRange = document.getElementById('evolutionRange');
+  if (evolutionRange) {
+    evolutionRange.addEventListener('change', (event) => {
+      currentEvolutionRange = parseInt(event.target.value, 10) || 12;
+      if (investments.length > 0) {
+        renderEvolutionChart();
+      }
+    });
+  }
+
   const profileSimulatorBtns = document.querySelectorAll('[data-profile]');
   profileSimulatorBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -269,6 +282,31 @@ function setupEventListeners() {
   if (startDateInput) {
     startDateInput.value = today;
   }
+}
+
+function setupComparatorIndexInputs() {
+  const comparisonItems = document.querySelectorAll('.comparison-item');
+
+  comparisonItems.forEach(item => {
+    const indexSelect = item.querySelector('.comparison-index');
+    const rateInput = item.querySelector('.comparison-rate');
+
+    if (!indexSelect || !rateInput) return;
+
+    const updatePlaceholder = () => {
+      const placeholders = {
+        cdi: 'Taxa (%): ex. 100 para 100% CDI',
+        selic: 'Taxa (%): ex. 100 para 100% SELIC',
+        ipca: 'Spread (%): ex. 6 para IPCA + 6%',
+        prefixado: 'Taxa anual (%): ex. 12.5'
+      };
+
+      rateInput.placeholder = placeholders[indexSelect.value] || placeholders.cdi;
+    };
+
+    indexSelect.addEventListener('change', updatePlaceholder);
+    updatePlaceholder();
+  });
 }
 
 async function handleLogin(e) {
@@ -461,7 +499,7 @@ function renderAllocationChart(allocation) {
 
   const labels = Object.keys(allocation);
   const data = Object.values(allocation).map(a => a.percentage);
-  const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const colors = ['#1d4ed8', '#3b82f6', '#1e40af', '#60a5fa', '#6366f1'];
 
   allocationChart = new Chart(ctx, {
     type: 'doughnut',
@@ -621,24 +659,38 @@ function handleImportCSV(e) {
 function handleCompare() {
   const comparisonItems = document.querySelectorAll('.comparison-item');
   const comparisons = [];
+  const comparisonRange = document.getElementById('comparisonRange');
+  const selectedRange = comparisonRange ? comparisonRange.value : 'custom';
 
   comparisonItems.forEach(item => {
     const name = item.querySelector('.comparison-name').value;
     const value = parseFloat(item.querySelector('.comparison-value').value);
-    const cdi = parseFloat(item.querySelector('.comparison-cdi').value);
-    const days = parseInt(item.querySelector('.comparison-days').value);
+    const indexType = item.querySelector('.comparison-index').value;
+    const rateValue = parseFloat(item.querySelector('.comparison-rate').value);
+    const customDays = parseInt(item.querySelector('.comparison-days').value, 10);
+    const taxExempt = item.querySelector('.comparison-tax-exempt').checked;
+    const days = selectedRange === 'custom' ? customDays : parseInt(selectedRange, 10);
 
-    if (name && value && cdi && days) {
-      const dailyRate = (currentCDI / 100) * (cdi / 100) / 252;
-      const finalValue = value * Math.pow(1 + dailyRate, days);
+    if (name && value && rateValue && days) {
+      const annualRate = getAnnualRateByIndex(indexType, rateValue);
+      const dailyRate = annualRate / 252;
+      const grossFinalValue = value * Math.pow(1 + dailyRate, days);
+      const grossProfit = grossFinalValue - value;
+      const tax = taxExempt ? 0 : calculateIncomeTax(grossProfit, days);
+      const finalValue = grossFinalValue - tax;
+      const profit = finalValue - value;
 
       comparisons.push({
         name,
         initialValue: value,
         finalValue,
-        profit: finalValue - value,
+        grossFinalValue,
+        profit,
+        tax,
         days,
-        cdi
+        rateValue,
+        indexType,
+        taxExempt
       });
     }
   });
@@ -661,16 +713,24 @@ function handleCompare() {
             <span style="font-weight: 600;">${formatCurrency(comp.initialValue)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: var(--text-secondary);">Valor Final:</span>
+            <span style="color: var(--text-secondary);">Valor Final Líquido:</span>
             <span style="font-weight: 600;">${formatCurrency(comp.finalValue)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-secondary);">Valor Final Bruto:</span>
+            <span style="font-weight: 600;">${formatCurrency(comp.grossFinalValue)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-secondary);">Imposto:</span>
+            <span style="font-weight: 600;">${formatCurrency(comp.tax)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
             <span style="color: var(--text-secondary);">Lucro:</span>
-            <span style="font-weight: 600; color: #10b981;">${formatCurrency(comp.profit)}</span>
+            <span style="font-weight: 600; color: #1d4ed8;">${formatCurrency(comp.profit)}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
             <span style="color: var(--text-secondary);">Rentabilidade:</span>
-            <span style="font-weight: 600; color: #10b981;">${((comp.profit / comp.initialValue) * 100).toFixed(2)}%</span>
+            <span style="font-weight: 600; color: #1d4ed8;">${((comp.profit / comp.initialValue) * 100).toFixed(2)}%</span>
           </div>
         </div>
       </div>
@@ -694,7 +754,7 @@ function renderComparisonChart(comparisons) {
 
   const labels = comparisons.map(c => c.name);
   const data = comparisons.map(c => c.finalValue);
-  const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444'];
+  const colors = ['#1d4ed8', '#3b82f6', '#1e40af', '#60a5fa'];
 
   comparisonChart = new Chart(ctx, {
     type: 'bar',
@@ -739,10 +799,26 @@ function renderComparisonChart(comparisons) {
 
 function getRandomColor() {
   const colors = [
-    '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+    '#1d4ed8', '#2563eb', '#3b82f6', '#1e40af', '#60a5fa',
+    '#0ea5e9', '#0284c7', '#4f46e5', '#6366f1', '#38bdf8'
   ];
   return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function getAnnualRateByIndex(indexType, rateValue) {
+  if (indexType === 'selic') {
+    return (currentSelic / 100) * (rateValue / 100);
+  }
+
+  if (indexType === 'ipca') {
+    return (currentIpca + rateValue) / 100;
+  }
+
+  if (indexType === 'prefixado') {
+    return rateValue / 100;
+  }
+
+  return (currentCDI / 100) * (rateValue / 100);
 }
 
 init();
