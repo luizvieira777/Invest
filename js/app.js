@@ -3,7 +3,6 @@ import {
   calculateInvestment,
   calculateDays,
   calculateIncomeTax,
-  generateEvolutionData,
   calculatePortfolioAllocation,
   calculateDetailedAllocation,
   formatCurrency
@@ -129,27 +128,24 @@ function renderEvolutionChart() {
     evolutionChart.destroy();
   }
 
-  const allEvolutions = investments.map(inv => {
-    const data = generateEvolutionData({
-      initialValue: parseFloat(inv.initial_value),
-      cdiPercentage: parseFloat(inv.cdi_percentage),
-      cdiRate: currentCDI,
-      monthlyContribution: parseFloat(inv.monthly_contribution || 0)
-    }, currentEvolutionRange);
+  const timeline = buildChartTimeline(investments);
 
+  const allEvolutions = investments.map(inv => {
+    const data = timeline.points.map(pointDate => calculateInvestmentValueAtDate(inv, pointDate));
     return {
       label: inv.name,
-      data: data.map(d => d.value),
+      data,
       borderColor: getRandomColor(),
       backgroundColor: 'transparent',
-      tension: 0.4
+      tension: 0.35,
+      spanGaps: false
     };
   });
 
   evolutionChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Array.from({ length: currentEvolutionRange + 1 }, (_, i) => `Mês ${i}`),
+      labels: timeline.labels,
       datasets: allEvolutions
     },
     options: {
@@ -176,10 +172,80 @@ function renderEvolutionChart() {
               return formatCurrency(value);
             }
           }
+        },
+        x: {
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true
+          }
         }
       }
     }
   });
+}
+
+function buildChartTimeline(investmentsList) {
+  const starts = investmentsList.map(inv => startOfMonth(new Date(inv.start_date)));
+  const ends = investmentsList.map(inv => startOfMonth(new Date(inv.end_date)));
+
+  const minStart = new Date(Math.min(...starts.map(d => d.getTime())));
+  const maxEnd = new Date(Math.max(...ends.map(d => d.getTime())));
+
+  const points = [];
+  const labels = [];
+  const current = new Date(minStart);
+
+  while (current <= maxEnd) {
+    points.push(new Date(current));
+    labels.push(formatMonthYear(current));
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  return { points, labels };
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function formatMonthYear(date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+}
+
+function calculateInvestmentValueAtDate(investment, pointDate) {
+  const startDate = new Date(investment.start_date);
+  const endDate = new Date(investment.end_date);
+  const monthPoint = startOfMonth(pointDate);
+
+  if (monthPoint < startOfMonth(startDate) || monthPoint > startOfMonth(endDate)) {
+    return null;
+  }
+
+  const initialValue = parseFloat(investment.initial_value || 0);
+  const cdiPercentage = parseFloat(investment.cdi_percentage || 100);
+  const monthlyContribution = parseFloat(investment.monthly_contribution || 0);
+
+  const daysElapsed = Math.max(0, calculateDays(startDate, monthPoint));
+  const dailyRate = (currentCDI / 100) * (cdiPercentage / 100) / 252;
+
+  const principalValue = initialValue * Math.pow(1 + dailyRate, daysElapsed);
+
+  let contributionsTotal = 0;
+  if (monthlyContribution > 0) {
+    let contributionDate = new Date(startDate);
+    contributionDate.setMonth(contributionDate.getMonth() + 1);
+
+    while (contributionDate <= monthPoint) {
+      const contributionDays = Math.max(0, calculateDays(contributionDate, monthPoint));
+      contributionsTotal += monthlyContribution * Math.pow(1 + dailyRate, contributionDays);
+      contributionDate.setMonth(contributionDate.getMonth() + 1);
+    }
+  }
+
+  return principalValue + contributionsTotal;
 }
 
 function setupEventListeners() {
