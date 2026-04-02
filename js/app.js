@@ -45,6 +45,7 @@ let calculationResult = null;
 let evolutionChart = null;
 let allocationChart = null;
 let comparisonChart = null;
+let currentEvolutionRange = 12;
 
 async function init() {
   showLoading();
