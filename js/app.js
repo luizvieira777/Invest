@@ -82,7 +82,7 @@ async function loadAppData() {
     currentCDI = indicators.cdi;
     currentSelic = indicators.selic;
     currentIpca = indicators.ipca;
-    updateIndicatorsUI(currentCDI, currentSelic, currentIpca);
+    updateIndicatorsUI(currentCDI, currentSelic, currentIpca, indicators.lastUpdatedAt);
 
     investments = await getInvestments();
 
