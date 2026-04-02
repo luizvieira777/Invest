@@ -56,19 +56,22 @@
     <main class="main-content">
       <header class="top-bar">
         <button class="menu-toggle" id="menuToggle">☰</button>
-        <div class="indicators">
-          <div class="indicator">
-            <span class="indicator-label">CDI</span>
-            <span class="indicator-value" id="cdiValue">-</span>
+        <div>
+          <div class="indicators">
+            <div class="indicator">
+              <span class="indicator-label">CDI</span>
+              <span class="indicator-value" id="cdiValue">-</span>
+            </div>
+            <div class="indicator">
+              <span class="indicator-label">SELIC</span>
+              <span class="indicator-value" id="selicValue">-</span>
+            </div>
+            <div class="indicator">
+              <span class="indicator-label">IPCA</span>
+              <span class="indicator-value" id="ipcaValue">-</span>
+            </div>
           </div>
-          <div class="indicator">
-            <span class="indicator-label">SELIC</span>
-            <span class="indicator-value" id="selicValue">-</span>
-          </div>
-          <div class="indicator">
-            <span class="indicator-label">IPCA</span>
-            <span class="indicator-value" id="ipcaValue">-</span>
-          </div>
+          <div class="indicator-update" id="lastIndicatorUpdate">Atualização indisponível</div>
         </div>
       </header>
 

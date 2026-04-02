@@ -30,7 +30,7 @@ export function showPage(pageName) {
   });
 }
 
-export function updateIndicators(cdi, selic, ipca) {
+export function updateIndicators(cdi, selic, ipca, lastUpdatedAt = null) {
   const cdiElement = document.getElementById('cdiValue');
   const selicElement = document.getElementById('selicValue');
   const ipcaElement = document.getElementById('ipcaValue');
@@ -49,7 +49,19 @@ export function updateIndicators(cdi, selic, ipca) {
     ipcaElement.textContent = formatPercentage(ipca);
     animateNumber(ipcaElement, 0, ipca);
   }
+
+  const lastUpdateElement = document.getElementById('lastIndicatorUpdate');
+  if (lastUpdateElement) {
+    if (lastUpdatedAt) {
+      const updatedDate = new Date(lastUpdatedAt);
+      const formatted = updatedDate.toLocaleString('pt-BR');
+      lastUpdateElement.textContent = `Atualizado em: ${formatted}`;
+    } else {
+      lastUpdateElement.textContent = 'Atualização indisponível';
+    }
+  }
 }
+
 
 export function animateNumber(element, start, end, duration = 1000) {
   const startTime = performance.now();
