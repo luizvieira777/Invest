@@ -312,6 +312,12 @@ function setupEventListeners() {
     calculatorForm.addEventListener('submit', handleCalculate);
   }
 
+  const investmentTypeSelect = document.getElementById('investmentType');
+  if (investmentTypeSelect) {
+    investmentTypeSelect.addEventListener('change', syncTaxOptionWithInvestmentType);
+    syncTaxOptionWithInvestmentType();
+  }
+
   const saveInvestmentBtn = document.getElementById('saveInvestmentBtn');
   if (saveInvestmentBtn) {
     saveInvestmentBtn.addEventListener('click', handleSaveInvestment);
@@ -467,6 +473,7 @@ async function handleCalculate(e) {
   const endDate = document.getElementById('endDate').value;
   const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value) || 0;
   const applyTax = document.getElementById('applyTax').checked;
+  const applyTaxEffective = isTaxExemptInvestmentType(type) ? false : applyTax;
 
   const result = calculateInvestment({
     initialValue,
@@ -475,7 +482,8 @@ async function handleCalculate(e) {
     startDate,
     endDate,
     monthlyContribution,
-    applyTax
+    applyTax: applyTaxEffective,
+    investmentType: type
   });
 
   calculationResult = {
@@ -487,10 +495,32 @@ async function handleCalculate(e) {
     start_date: startDate,
     end_date: endDate,
     monthly_contribution: monthlyContribution,
-    apply_tax: applyTax
+    apply_tax: applyTaxEffective
   };
 
   showCalculationResult(result);
+}
+
+function isTaxExemptInvestmentType(type) {
+  return ['LCI', 'LCA'].includes(type);
+}
+
+function syncTaxOptionWithInvestmentType() {
+  const investmentTypeSelect = document.getElementById('investmentType');
+  const applyTaxCheckbox = document.getElementById('applyTax');
+  const applyTaxLabel = document.getElementById('applyTaxLabel');
+
+  if (!investmentTypeSelect || !applyTaxCheckbox) return;
+
+  const isExempt = isTaxExemptInvestmentType(investmentTypeSelect.value);
+  if (isExempt) {
+    applyTaxCheckbox.checked = false;
+    applyTaxCheckbox.disabled = true;
+    if (applyTaxLabel) applyTaxLabel.textContent = 'Isento para LCI/LCA';
+  } else {
+    applyTaxCheckbox.disabled = false;
+    if (applyTaxLabel) applyTaxLabel.textContent = 'Aplicar Imposto de Renda';
+  }
 }
 
 async function handleSaveInvestment() {
