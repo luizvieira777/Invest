@@ -14,7 +14,8 @@ export function calculateInvestment(params) {
     startDate,
     endDate,
     monthlyContribution = 0,
-    applyTax = true
+    applyTax = true,
+    investmentType = ''
   } = params;
 
   const days = calculateDays(startDate, endDate);
@@ -43,7 +44,8 @@ export function calculateInvestment(params) {
   const profit = grossValue - totalInvested;
 
   let tax = 0;
-  if (applyTax) {
+  const isTaxExempt = ['LCI', 'LCA'].includes(investmentType);
+  if (applyTax && !isTaxExempt) {
     tax = calculateIncomeTax(profit, days);
   }
 

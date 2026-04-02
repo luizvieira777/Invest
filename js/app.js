@@ -1,9 +1,8 @@
-import { getCDI, getSelic, updateIndicators } from './api.js';
+import { updateIndicators } from './api.js';
 import {
   calculateInvestment,
   calculateDays,
   calculateIncomeTax,
-  generateEvolutionData,
   calculatePortfolioAllocation,
   calculateDetailedAllocation,
   formatCurrency
@@ -45,9 +44,11 @@ let calculationResult = null;
 let evolutionChart = null;
 let allocationChart = null;
 let comparisonChart = null;
+let currentEvolutionRange = 12;
 
 async function init() {
   showLoading();
+  initializeLucideIcons();
 
   supabase.auth.onAuthStateChange((event, session) => {
     (() => {
@@ -83,7 +84,7 @@ async function loadAppData() {
     currentCDI = indicators.cdi;
     currentSelic = indicators.selic;
     currentIpca = indicators.ipca;
-    updateIndicatorsUI(currentCDI, currentSelic, currentIpca);
+    updateIndicatorsUI(currentCDI, currentSelic, currentIpca, indicators.updatedAt);
 
     investments = await getInvestments();
 
@@ -95,6 +96,12 @@ async function loadAppData() {
   }
 
   hideLoading();
+}
+
+function initializeLucideIcons() {
+  if (window.lucide?.createIcons) {
+    window.lucide.createIcons();
+  }
 }
 
 function updateDashboard() {
@@ -121,27 +128,25 @@ function renderEvolutionChart() {
     evolutionChart.destroy();
   }
 
-  const allEvolutions = investments.map(inv => {
-    const data = generateEvolutionData({
-      initialValue: parseFloat(inv.initial_value),
-      cdiPercentage: parseFloat(inv.cdi_percentage),
-      cdiRate: currentCDI,
-      monthlyContribution: parseFloat(inv.monthly_contribution || 0)
-    }, currentEvolutionRange);
+  const fullTimeline = buildChartTimeline(investments);
+  const timeline = applyTimelineZoom(fullTimeline, currentEvolutionRange);
 
+  const allEvolutions = investments.map(inv => {
+    const data = timeline.points.map(pointDate => calculateInvestmentValueAtDate(inv, pointDate));
     return {
       label: inv.name,
-      data: data.map(d => d.value),
+      data,
       borderColor: getRandomColor(),
       backgroundColor: 'transparent',
-      tension: 0.4
+      tension: 0.35,
+      spanGaps: false
     };
   });
 
   evolutionChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Array.from({ length: currentEvolutionRange + 1 }, (_, i) => `Mês ${i}`),
+      labels: timeline.labels,
       datasets: allEvolutions
     },
     options: {
@@ -168,10 +173,92 @@ function renderEvolutionChart() {
               return formatCurrency(value);
             }
           }
+        },
+        x: {
+          ticks: {
+            maxRotation: 0,
+            autoSkip: true
+          }
         }
       }
     }
   });
+}
+
+function buildChartTimeline(investmentsList) {
+  const starts = investmentsList.map(inv => startOfMonth(new Date(inv.start_date)));
+  const ends = investmentsList.map(inv => startOfMonth(new Date(inv.end_date)));
+
+  const minStart = new Date(Math.min(...starts.map(d => d.getTime())));
+  const maxEnd = new Date(Math.max(...ends.map(d => d.getTime())));
+
+  const points = [];
+  const labels = [];
+  const current = new Date(minStart);
+
+  while (current <= maxEnd) {
+    points.push(new Date(current));
+    labels.push(formatMonthYear(current));
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  return { points, labels };
+}
+
+function applyTimelineZoom(timeline, monthsWindow) {
+  const safeWindow = Number.isFinite(monthsWindow) ? monthsWindow : 12;
+  const totalPoints = timeline.points.length;
+  const sliceSize = Math.max(1, safeWindow + 1);
+  const startIndex = Math.max(0, totalPoints - sliceSize);
+
+  return {
+    points: timeline.points.slice(startIndex),
+    labels: timeline.labels.slice(startIndex)
+  };
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function formatMonthYear(date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+}
+
+function calculateInvestmentValueAtDate(investment, pointDate) {
+  const startDate = new Date(investment.start_date);
+  const endDate = new Date(investment.end_date);
+  const monthPoint = startOfMonth(pointDate);
+
+  if (monthPoint < startOfMonth(startDate) || monthPoint > startOfMonth(endDate)) {
+    return null;
+  }
+
+  const initialValue = parseFloat(investment.initial_value || 0);
+  const cdiPercentage = parseFloat(investment.cdi_percentage || 100);
+  const monthlyContribution = parseFloat(investment.monthly_contribution || 0);
+
+  const daysElapsed = Math.max(0, calculateDays(startDate, monthPoint));
+  const dailyRate = (currentCDI / 100) * (cdiPercentage / 100) / 252;
+
+  const principalValue = initialValue * Math.pow(1 + dailyRate, daysElapsed);
+
+  let contributionsTotal = 0;
+  if (monthlyContribution > 0) {
+    let contributionDate = new Date(startDate);
+    contributionDate.setMonth(contributionDate.getMonth() + 1);
+
+    while (contributionDate <= monthPoint) {
+      const contributionDays = Math.max(0, calculateDays(contributionDate, monthPoint));
+      contributionsTotal += monthlyContribution * Math.pow(1 + dailyRate, contributionDays);
+      contributionDate.setMonth(contributionDate.getMonth() + 1);
+    }
+  }
+
+  return principalValue + contributionsTotal;
 }
 
 function setupEventListeners() {
@@ -223,6 +310,12 @@ function setupEventListeners() {
   const calculatorForm = document.getElementById('calculatorForm');
   if (calculatorForm) {
     calculatorForm.addEventListener('submit', handleCalculate);
+  }
+
+  const investmentTypeSelect = document.getElementById('investmentType');
+  if (investmentTypeSelect) {
+    investmentTypeSelect.addEventListener('change', syncTaxOptionWithInvestmentType);
+    syncTaxOptionWithInvestmentType();
   }
 
   const saveInvestmentBtn = document.getElementById('saveInvestmentBtn');
@@ -380,6 +473,7 @@ async function handleCalculate(e) {
   const endDate = document.getElementById('endDate').value;
   const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value) || 0;
   const applyTax = document.getElementById('applyTax').checked;
+  const applyTaxEffective = isTaxExemptInvestmentType(type) ? false : applyTax;
 
   const result = calculateInvestment({
     initialValue,
@@ -388,7 +482,8 @@ async function handleCalculate(e) {
     startDate,
     endDate,
     monthlyContribution,
-    applyTax
+    applyTax: applyTaxEffective,
+    investmentType: type
   });
 
   calculationResult = {
@@ -400,10 +495,32 @@ async function handleCalculate(e) {
     start_date: startDate,
     end_date: endDate,
     monthly_contribution: monthlyContribution,
-    apply_tax: applyTax
+    apply_tax: applyTaxEffective
   };
 
   showCalculationResult(result);
+}
+
+function isTaxExemptInvestmentType(type) {
+  return ['LCI', 'LCA'].includes(type);
+}
+
+function syncTaxOptionWithInvestmentType() {
+  const investmentTypeSelect = document.getElementById('investmentType');
+  const applyTaxCheckbox = document.getElementById('applyTax');
+  const applyTaxLabel = document.getElementById('applyTaxLabel');
+
+  if (!investmentTypeSelect || !applyTaxCheckbox) return;
+
+  const isExempt = isTaxExemptInvestmentType(investmentTypeSelect.value);
+  if (isExempt) {
+    applyTaxCheckbox.checked = false;
+    applyTaxCheckbox.disabled = true;
+    if (applyTaxLabel) applyTaxLabel.textContent = 'Isento para LCI/LCA';
+  } else {
+    applyTaxCheckbox.disabled = false;
+    if (applyTaxLabel) applyTaxLabel.textContent = 'Aplicar Imposto de Renda';
+  }
 }
 
 async function handleSaveInvestment() {

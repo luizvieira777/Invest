@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 </head>
 
 <body>
@@ -19,32 +20,32 @@
       <div class="sidebar-header">
         <h1 class="app-title">
           <span class="brand-logo" aria-hidden="true">LZ</span>
-          <span class="brand-text">LZ</span>
+          <span class="brand-text">LZ INVEST</span>
         </h1>
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard">
-          <span class="nav-icon">📊</span>
+          <i data-lucide="layout-dashboard" class="nav-icon" aria-hidden="true"></i>
           Dashboard
         </a>
         <a href="#" class="nav-item" data-page="calculator">
-          <span class="nav-icon">🧮</span>
+          <i data-lucide="calculator" class="nav-icon" aria-hidden="true"></i>
           Calculadora
         </a>
         <a href="#" class="nav-item" data-page="investments">
-          <span class="nav-icon">💼</span>
+          <i data-lucide="briefcase-business" class="nav-icon" aria-hidden="true"></i>
           Meus Investimentos
         </a>
         <a href="#" class="nav-item" data-page="portfolio">
-          <span class="nav-icon">📈</span>
+          <i data-lucide="pie-chart" class="nav-icon" aria-hidden="true"></i>
           Carteira
         </a>
         <a href="#" class="nav-item" data-page="simulator">
-          <span class="nav-icon">🎯</span>
+          <i data-lucide="target" class="nav-icon" aria-hidden="true"></i>
           Simulador de Perfil
         </a>
         <a href="#" class="nav-item" data-page="comparator">
-          <span class="nav-icon">⚖️</span>
+          <i data-lucide="scale" class="nav-icon" aria-hidden="true"></i>
           Comparador
         </a>
       </nav>
@@ -58,16 +59,20 @@
         <button class="menu-toggle" id="menuToggle">☰</button>
         <div class="indicators">
           <div class="indicator">
-            <span class="indicator-label">CDI</span>
+            <span class="indicator-label">CDI anualizado</span>
             <span class="indicator-value" id="cdiValue">-</span>
           </div>
           <div class="indicator">
-            <span class="indicator-label">SELIC</span>
+            <span class="indicator-label">SELIC meta</span>
             <span class="indicator-value" id="selicValue">-</span>
           </div>
           <div class="indicator">
-            <span class="indicator-label">IPCA</span>
+            <span class="indicator-label">IPCA 12M</span>
             <span class="indicator-value" id="ipcaValue">-</span>
+          </div>
+          <div class="indicator indicator-updated-at">
+            <span class="indicator-label">Atualizado em</span>
+            <span class="indicator-value indicator-timestamp" id="indicatorsUpdatedAt">-</span>
           </div>
         </div>
       </header>
@@ -173,7 +178,7 @@
                 <div class="form-group">
                   <label class="checkbox-label">
                     <input type="checkbox" id="applyTax" checked />
-                    Aplicar Imposto de Renda
+                    <span id="applyTaxLabel">Aplicar Imposto de Renda</span>
                   </label>
                 </div>
               </div>
