@@ -1,4 +1,4 @@
-import { getCDI, getSelic, updateIndicators } from './api.js';
+import { updateIndicators } from './api.js';
 import {
   calculateInvestment,
   calculateDays,
@@ -49,6 +49,7 @@ let currentEvolutionRange = 12;
 
 async function init() {
   showLoading();
+  initializeLucideIcons();
 
   supabase.auth.onAuthStateChange((event, session) => {
     (() => {
@@ -84,7 +85,7 @@ async function loadAppData() {
     currentCDI = indicators.cdi;
     currentSelic = indicators.selic;
     currentIpca = indicators.ipca;
-    updateIndicatorsUI(currentCDI, currentSelic, currentIpca);
+    updateIndicatorsUI(currentCDI, currentSelic, currentIpca, indicators.updatedAt);
 
     investments = await getInvestments();
 
@@ -96,6 +97,12 @@ async function loadAppData() {
   }
 
   hideLoading();
+}
+
+function initializeLucideIcons() {
+  if (window.lucide?.createIcons) {
+    window.lucide.createIcons();
+  }
 }
 
 function updateDashboard() {
