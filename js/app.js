@@ -128,7 +128,8 @@ function renderEvolutionChart() {
     evolutionChart.destroy();
   }
 
-  const timeline = buildChartTimeline(investments);
+  const fullTimeline = buildChartTimeline(investments);
+  const timeline = applyTimelineZoom(fullTimeline, currentEvolutionRange);
 
   const allEvolutions = investments.map(inv => {
     const data = timeline.points.map(pointDate => calculateInvestmentValueAtDate(inv, pointDate));
@@ -202,6 +203,18 @@ function buildChartTimeline(investmentsList) {
   }
 
   return { points, labels };
+}
+
+function applyTimelineZoom(timeline, monthsWindow) {
+  const safeWindow = Number.isFinite(monthsWindow) ? monthsWindow : 12;
+  const totalPoints = timeline.points.length;
+  const sliceSize = Math.max(1, safeWindow + 1);
+  const startIndex = Math.max(0, totalPoints - sliceSize);
+
+  return {
+    points: timeline.points.slice(startIndex),
+    labels: timeline.labels.slice(startIndex)
+  };
 }
 
 function startOfMonth(date) {
