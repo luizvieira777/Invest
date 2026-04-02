@@ -1,16 +1,18 @@
 const BACEN_API_URL = 'https://api.bcb.gov.br/dados/serie/bcdata.sgs';
 const CORS_PROXY_URL = 'https://api.allorigins.win/raw?url=';
 
-const CDI_SERIES = '12';
-const SELIC_SERIES = '432';
-const IPCA_SERIES = '433';
+const SERIES = {
+  cdi: '12',
+  selic: '432',
+  ipca: '433'
+};
 
-const CACHE_TTL_MS = 60 * 60 * 1000;
-const CACHE_PREFIX = 'economic_indicator_cache_v1';
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1h
+const CACHE_PREFIX = 'economic_indicator_cache_v2';
 
 const DEFAULTS = {
   cdi: 11.65,
-  selic: 11.75,
+  selic: 14.75,
   ipca: 4.5
 };
 
@@ -20,21 +22,14 @@ let memoryCache = {
   ipca: null
 };
 
-function formatDate(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
 function getCacheKey(indicator) {
   return `${CACHE_PREFIX}:${indicator}`;
 }
 
 function getCachedIndicator(indicator) {
-  const inMemory = memoryCache[indicator];
-  if (inMemory && Date.now() - inMemory.updatedAt < CACHE_TTL_MS) {
-    return inMemory;
+  const mem = memoryCache[indicator];
+  if (mem && Date.now() - mem.updatedAt < CACHE_TTL_MS && mem.source !== 'fallback') {
+    return mem;
   }
 
   try {
@@ -42,7 +37,11 @@ function getCachedIndicator(indicator) {
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
-    if (!parsed?.updatedAt || Date.now() - parsed.updatedAt >= CACHE_TTL_MS) {
+    if (
+      !parsed?.updatedAt ||
+      parsed.source === 'fallback' ||
+      Date.now() - parsed.updatedAt >= CACHE_TTL_MS
+    ) {
       return null;
     }
 
@@ -55,32 +54,38 @@ function getCachedIndicator(indicator) {
 
 function setCachedIndicator(indicator, payload) {
   memoryCache[indicator] = payload;
+
+  if (payload.source === 'fallback') return;
+
   try {
     localStorage.setItem(getCacheKey(indicator), JSON.stringify(payload));
   } catch {
-    // ignore storage quota / private mode issues
+    // ignore storage failures
   }
 }
 
-async function fetchSeriesData(series, startDate, endDate) {
-  const url = `${BACEN_API_URL}/${series}/dados?formato=json&dataInicial=${formatDate(startDate)}&dataFinal=${formatDate(endDate)}`;
-  const proxiedUrl = `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+function toProxyUrl(url) {
+  return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+}
 
-  const response = await fetch(proxiedUrl, {
-    method: 'GET',
-    cache: 'no-store'
-  });
+async function fetchSeriesLatest(series, count = 1) {
+  const url = `${BACEN_API_URL}/${series}/dados/ultimos/${count}?formato=json`;
+  const response = await fetch(toProxyUrl(url), { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error(`Falha ao buscar série ${series}`);
   }
 
   const data = await response.json();
-  if (!Array.isArray(data)) {
-    throw new Error(`Formato inválido para série ${series}`);
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error(`Série ${series} sem dados`);
   }
 
   return data;
+}
+
+function parsePercent(raw) {
+  return parseFloat(String(raw).replace(',', '.'));
 }
 
 function annualizeDailyRate(dailyPercent) {
@@ -88,79 +93,67 @@ function annualizeDailyRate(dailyPercent) {
   return (Math.pow(1 + dailyRate, 252) - 1) * 100;
 }
 
-async function resolveIndicator({
-  cacheKey,
-  defaultValue,
-  series,
-  days,
-  transformValue = value => value
-}) {
-  const cached = getCachedIndicator(cacheKey);
+function rollingTwelveMonths(monthlySeries) {
+  return monthlySeries.reduce((acc, item) => {
+    const monthRate = parsePercent(item.valor) / 100;
+    return acc * (1 + monthRate);
+  }, 1) - 1;
+}
+
+async function resolveIndicator(indicator) {
+  const cached = getCachedIndicator(indicator);
   if (cached) return cached;
 
-  const now = new Date();
-  const startDate = new Date(now);
-  startDate.setDate(startDate.getDate() - days);
-
   try {
-    const data = await fetchSeriesData(series, startDate, now);
-    const lastValue = data[data.length - 1];
+    let value;
+    let referenceDate;
 
-    if (!lastValue?.valor) {
-      throw new Error('Série sem valor válido');
+    if (indicator === 'cdi') {
+      const [latest] = await fetchSeriesLatest(SERIES.cdi, 1);
+      value = annualizeDailyRate(parsePercent(latest.valor));
+      referenceDate = latest.data;
+    } else if (indicator === 'selic') {
+      const [latest] = await fetchSeriesLatest(SERIES.selic, 1);
+      value = parsePercent(latest.valor);
+      referenceDate = latest.data;
+    } else {
+      const latest12 = await fetchSeriesLatest(SERIES.ipca, 12);
+      value = rollingTwelveMonths(latest12) * 100;
+      referenceDate = latest12[latest12.length - 1].data;
     }
 
-    const rawValue = parseFloat(String(lastValue.valor).replace(',', '.'));
-    const value = transformValue(rawValue);
-
     const payload = {
-      value: Number.isFinite(value) ? value : defaultValue,
-      referenceDate: lastValue.data || formatDate(now),
+      value: Number.isFinite(value) ? value : DEFAULTS[indicator],
+      referenceDate,
       updatedAt: Date.now(),
       source: 'api'
     };
 
-    setCachedIndicator(cacheKey, payload);
+    setCachedIndicator(indicator, payload);
     return payload;
   } catch {
     const payload = {
-      value: defaultValue,
-      referenceDate: formatDate(now),
+      value: DEFAULTS[indicator],
+      referenceDate: null,
       updatedAt: Date.now(),
       source: 'fallback'
     };
 
-    setCachedIndicator(cacheKey, payload);
+    setCachedIndicator(indicator, payload);
     return payload;
   }
 }
 
 export async function getCDI() {
-  return resolveIndicator({
-    cacheKey: 'cdi',
-    defaultValue: DEFAULTS.cdi,
-    series: CDI_SERIES,
-    days: 30,
-    transformValue: annualizeDailyRate
-  });
+  return resolveIndicator('cdi');
 }
 
 export async function getSelic() {
-  return resolveIndicator({
-    cacheKey: 'selic',
-    defaultValue: DEFAULTS.selic,
-    series: SELIC_SERIES,
-    days: 30
-  });
+  return resolveIndicator('selic');
 }
 
 export async function getIpca() {
-  return resolveIndicator({
-    cacheKey: 'ipca',
-    defaultValue: DEFAULTS.ipca,
-    series: IPCA_SERIES,
-    days: 365
-  });
+  return resolveIndicator('ipca');
 }
 
 export async function updateIndicators() {
@@ -174,9 +167,7 @@ export async function updateIndicators() {
     cdi: cdiData.value,
     selic: selicData.value,
     ipca: ipcaData.value,
-    updatedAt: new Date(
-      Math.max(cdiData.updatedAt, selicData.updatedAt, ipcaData.updatedAt)
-    ).toISOString(),
+    updatedAt: new Date(Math.max(cdiData.updatedAt, selicData.updatedAt, ipcaData.updatedAt)).toISOString(),
     sources: {
       cdi: cdiData.source,
       selic: selicData.source,
